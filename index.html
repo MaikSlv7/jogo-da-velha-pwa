@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#121212" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#121212">
   <title>Jogo da Velha</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Press Start 2P', cursive;
@@ -18,6 +18,10 @@
       background-position: center;
       color: #fff;
       transition: 0.3s;
+    }
+    body.dark {
+      background-color: #121212;
+      color: #eee;
     }
     #tabuleiro {
       display: grid;
@@ -62,9 +66,13 @@
       cursor: pointer;
       transition: background 0.3s;
     }
+    button:hover, select:hover {
+      background-color: #eee;
+    }
   </style>
 </head>
 <body>
+
   <h1>Jogo da Velha</h1>
   <div id="modo">
     Modo:
@@ -90,9 +98,8 @@
   </div>
   <button onclick="reiniciar()">Reiniciar</button>
   <button onclick="alternarTema()">Alternar Tema</button>
-
-  <audio id="somClique" src="som-clique.wav"></audio>
-  <audio id="somVitoria" src="som-vitoria.mp3"></audio>
+  <audio id="somClique" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="somVitoria" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"></audio>
 
   <script>
     if ('serviceWorker' in navigator) {
@@ -100,6 +107,183 @@
         .then(reg => console.log('Service Worker registrado:', reg.scope))
         .catch(err => console.error('Erro ao registrar Service Worker:', err));
     }
+  </script>
+<script>
+    let jogador = "X";
+    let tabuleiro = Array(9).fill("");
+    let vitoriasX = 0;
+    let vitoriasO = 0;
+    let empates = 0;
+
+    const tabuleiroEl = document.getElementById("tabuleiro");
+    const mensagemEl = document.getElementById("mensagem");
+    const spanX = document.getElementById("vitoriasX");
+    const spanO = document.getElementById("vitoriasO");
+    const spanEmpates = document.getElementById("empates");
+    const nivelSelect = document.getElementById("nivel");
+    const modoSelect = document.getElementById("modoJogo");
+    const somClique = document.getElementById("somClique");
+    const somVitoria = document.getElementById("somVitoria");
+
+    function criarTabuleiro() {
+      tabuleiroEl.innerHTML = "";
+      tabuleiro.forEach((valor, i) => {
+        const celula = document.createElement("div");
+        celula.className = "celula";
+        celula.dataset.index = i;
+        celula.innerText = valor;
+        celula.onclick = () => jogar(i);
+        tabuleiroEl.appendChild(celula);
+      });
+    }
+
+    function jogar(index) {
+      if (tabuleiro[index] !== "" || verificarVencedor()) return;
+      tabuleiro[index] = jogador;
+      somClique.play();
+      criarTabuleiro();
+      if (verificarResultado(jogador)) return;
+
+      if (modoSelect.value === "bot" && jogador === "X") {
+        jogador = "O";
+        setTimeout(jogadaBot, 300);
+      } else if (modoSelect.value === "2p") {
+        jogador = jogador === "X" ? "O" : "X";
+        mensagemEl.innerText = `Vez do jogador ${jogador}`;
+      }
+    }
+
+    function jogadaBot() {
+      let index;
+      const nivel = nivelSelect.value;
+      if (nivel === "facil") {
+        let livres = tabuleiro.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+        index = livres[Math.floor(Math.random() * livres.length)];
+      } else if (nivel === "medio") {
+        index = estrategiaMedia();
+      } else {
+        index = melhorJogadaMinimax();
+      }
+      if (index !== -1) {
+        tabuleiro[index] = "O";
+        somClique.play();
+        criarTabuleiro();
+        verificarResultado("O");
+      }
+      jogador = "X";
+    }
+
+    function estrategiaMedia() {
+      for (let i = 0; i < 9; i++) {
+        if (tabuleiro[i] === "") {
+          tabuleiro[i] = "O";
+          if (verificarVencedor()) return i;
+          tabuleiro[i] = "";
+        }
+      }
+      for (let i = 0; i < 9; i++) {
+        if (tabuleiro[i] === "") {
+          tabuleiro[i] = "X";
+          if (verificarVencedor()) return i;
+          tabuleiro[i] = "";
+        }
+      }
+      const prioridade = [4, 0, 2, 6, 8, 1, 3, 5, 7];
+      return prioridade.find(i => tabuleiro[i] === "");
+    }
+
+    function melhorJogadaMinimax() {
+      let melhorVal = -Infinity, melhorMov = -1;
+      for (let i = 0; i < 9; i++) {
+        if (tabuleiro[i] === "") {
+          tabuleiro[i] = "O";
+          let val = minimax(tabuleiro, 0, false);
+          tabuleiro[i] = "";
+          if (val > melhorVal) {
+            melhorVal = val;
+            melhorMov = i;
+          }
+        }
+      }
+      return melhorMov;
+    }
+
+    function minimax(tab, profundidade, isMax) {
+      const r = checarVencedorSimulado(tab);
+      if (r !== null) {
+        if (r === "O") return 10 - profundidade;
+        if (r === "X") return profundidade - 10;
+        return 0;
+      }
+      if (isMax) {
+        let melhor = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (tab[i] === "") {
+            tab[i] = "O";
+            melhor = Math.max(melhor, minimax(tab, profundidade + 1, false));
+            tab[i] = "";
+          }
+        }
+        return melhor;
+      } else {
+        let melhor = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (tab[i] === "") {
+            tab[i] = "X";
+            melhor = Math.min(melhor, minimax(tab, profundidade + 1, true));
+            tab[i] = "";
+          }
+        }
+        return melhor;
+      }
+    }
+
+    function checarVencedorSimulado(t) {
+      const c = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for (let [a,b,c2] of c) if (t[a] && t[a] === t[b] && t[b] === t[c2]) return t[a];
+      if (t.every(c => c !== "")) return "empate";
+      return null;
+    }
+
+    function verificarResultado(jogadorAtual) {
+      if (verificarVencedor()) {
+        mensagemEl.innerText = `Jogador ${jogadorAtual} venceu!`;
+        somVitoria.play();
+        if (jogadorAtual === "X") vitoriasX++; else vitoriasO++;
+      } else if (tabuleiro.every(c => c !== "")) {
+        mensagemEl.innerText = "Empate!";
+        empates++;
+      } else {
+        return false;
+      }
+      atualizarPlacar();
+      return true;
+    }
+
+    function verificarVencedor() {
+      const c = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      return c.some(([a,b,c2]) => tabuleiro[a] && tabuleiro[a] === tabuleiro[b] && tabuleiro[b] === tabuleiro[c2]);
+    }
+
+    function atualizarPlacar() {
+      spanX.textContent = vitoriasX;
+      spanO.textContent = vitoriasO;
+      spanEmpates.textContent = empates;
+    }
+
+    function reiniciar() {
+      tabuleiro = Array(9).fill("");
+      jogador = "X";
+      mensagemEl.innerText = "Vez do jogador X";
+      criarTabuleiro();
+    }
+
+    function alternarTema() {
+      document.body.classList.toggle("dark");
+    }
+
+    criarTabuleiro();
+    mensagemEl.innerText = "Vez do jogador X";
   </script>
 </body>
 </html>
