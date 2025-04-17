@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#121212" />
+  <title>Jogo da Velha</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Press Start 2P', cursive;
+      text-align: center;
+      margin-top: 30px;
+      background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e');
+      background-size: cover;
+      background-attachment: fixed;
+      background-position: center;
+      color: #fff;
+      transition: 0.3s;
+    }
+    #tabuleiro {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .celula {
+      width: 100px;
+      height: 100px;
+      font-size: 36px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border: 3px solid #222;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s, transform 0.2s;
+      border-radius: 10px;
+    }
+    .celula:hover {
+      background-color: rgba(255, 255, 255, 1);
+      transform: scale(1.05);
+    }
+    #mensagem, #placar, #modo, #dificuldade {
+      margin-top: 15px;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.6);
+      display: inline-block;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    button, select {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      background-color: #fff;
+      color: #000;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jogo da Velha</h1>
+  <div id="modo">
+    Modo:
+    <select id="modoJogo">
+      <option value="bot">Contra o Bot</option>
+      <option value="2p">2 Jogadores Locais</option>
+    </select>
+  </div>
+  <div id="dificuldade">
+    Dificuldade (se bot):
+    <select id="nivel">
+      <option value="facil">Fácil</option>
+      <option value="medio">Médio</option>
+      <option value="impossivel" selected>Impossível</option>
+    </select>
+  </div>
+  <div id="tabuleiro"></div>
+  <div id="mensagem"></div>
+  <div id="placar">
+    Vitórias X: <span id="vitoriasX">0</span> |
+    Vitórias O: <span id="vitoriasO">0</span> |
+    Empates: <span id="empates">0</span>
+  </div>
+  <button onclick="reiniciar()">Reiniciar</button>
+  <button onclick="alternarTema()">Alternar Tema</button>
+
+  <audio id="somClique" src="som-clique.wav"></audio>
+  <audio id="somVitoria" src="som-vitoria.mp3"></audio>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registrado:', reg.scope))
+        .catch(err => console.error('Erro ao registrar Service Worker:', err));
+    }
+  </script>
+</body>
+</html>
